@@ -1,7 +1,7 @@
 #include "function.h"
 
     const wchar_t space_str[] = L"    ";
-    const wchar_t dir_str[] = L"\x100---";
+    const wchar_t dir_str[] = L"\xC3---";
     uint32_t BS_Info_start_pos;
     uint8_t cluster_count;
 
@@ -216,7 +216,7 @@ file_attr_t get_next_element(void)
 
     element = get_name();
 
-    if (element.Status != S_EMPTY)
+    if ((element.Status != S_EMPTY) &&(element.Status != S_DELETED))
         switch (element.DIR_Attr)
         {
         case VOLUME_ID:

@@ -5,15 +5,14 @@
 
  extern   FILE *p_file;
  extern   FILE *p_output_file;
- extern   uint32_t FAT_start_pos, Cluster2_start_pos;
- extern   uint32_t Cluster_size, Root_dir_first_cluster;
- extern   uint32_t FAT_len;
+    uint32_t FAT_start_pos, Cluster2_start_pos;
+    uint32_t Cluster_size, Root_dir_first_cluster;
+    uint32_t FAT_len;
  extern   uint32_t Fat_copy[];
  extern   char filename[];
- extern   uint32_t global_file_pos;
+    uint32_t global_file_pos;
 
- extern   char preambula[];
- extern   uint16_t preambula_len;
+    uint16_t preambula_len;
 
 #define S_EMPTY         0
 #define S_DIRECTORY     1

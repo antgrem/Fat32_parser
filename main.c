@@ -1,33 +1,20 @@
 #include "main.h"
 #include "function.h"
-#include <wchar.h>
 
-
-FILE *open_file (const char * file_name);
 
     fat32_BS_t BS;
     fat32_FSInfo_t FSInfo;
     FILE *p_file;
     FILE *p_output_file;
-    uint32_t FAT_start_pos, Cluster2_start_pos;
-    uint32_t Cluster_size, Root_dir_first_cluster;
-    uint32_t BS_Info_start_pos;
-    uint32_t FAT_len;
-    uint32_t global_file_pos;
-
-    uint16_t preambula_len;
-    uint32_t cd;
 
     uint32_t Fat_copy[0x3FC000];
 
     char filename[30];
-    wchar_t d;
 
 
 
 int main(int argc, char *argv[])
 {
-
     preambula_len = 0;
 
     if (argc ==1)
@@ -49,10 +36,6 @@ int main(int argc, char *argv[])
         {
             get_BS_info(&BS); //get information about boot sector of FAT
             get_FS_info(&FSInfo);
-
-#ifdef DEBIG_INFO
-            Print_BS_info(BS);
-#endif // DEBIG_INFO
 
             if(Get_FAT_information(&BS)) // get main information of sectors starts position
             {   //some kind of error. was printf in function Get_FAT_information()

@@ -125,4 +125,8 @@ typedef struct {
 
 #pragma pack(pop)
 
+
+FILE *open_file (const char * file_name);
+
+
 #endif // __MAIN_H_
