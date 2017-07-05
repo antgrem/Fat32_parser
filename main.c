@@ -1,15 +1,14 @@
 #include "main.h"
 #include "function.h"
 
-    FILE *p_file;
-    FILE *p_output_file;
-
-    char filename[30];
 
 int main(int argc, char *argv[])
 {
-//    preambula_len = 0;
+    FILE *img_file;
 
+char filename[MAX_LNF_LENGHT];
+
+    // take name of image file
     if (argc ==1)
     {
         printf("Not enough parameters!\n");
@@ -20,23 +19,16 @@ int main(int argc, char *argv[])
     }
     else
     {
-       p_file = open_file (argv[1]);
+       img_file = open_file (argv[1], filename);
     }
 
-    p_output_file = fopen("output.txt", "w+");
-
-    if (p_file)
+    if (img_file != NULL)
         {
-
-            if(Get_FAT_information()) // get main information of sectors starts position
-            {   //some kind of error. was printf in function Get_FAT_information()
+            if(Parse_file(img_file, filename))
+            {//error in function
                 return 1;
             }
-
-            scan_root();
-
-            fclose(p_file);
-            fclose(p_output_file);
+            fclose(img_file);
         }
         else
         {
@@ -46,7 +38,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-FILE *open_file (const char * file_name)
+FILE *open_file (const char * file_name, char *str_file_name)
 {
     size_t len;
     char *pstr = NULL;
@@ -73,7 +65,7 @@ FILE *open_file (const char * file_name)
         strcat(pstr, ".img");
     }
 
-    strcpy(filename, pstr);
+    strcpy(str_file_name, pstr);
     pfile = fopen(pstr, "r");
 
     free(pstr);
