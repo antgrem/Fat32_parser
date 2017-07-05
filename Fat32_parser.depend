@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1499251654 source:c:\users\user\documents\github\fat32_parser\main.c
+1499263600 source:c:\users\user\documents\github\fat32_parser\main.c
 	"main.h"
 	"function.h"
 
@@ -9,9 +9,9 @@
 	<stdlib.h>
 	<string.h>
 
-1499251654 c:\users\user\documents\github\fat32_parser\function.h
+1499263763 c:\users\user\documents\github\fat32_parser\function.h
 	"main.h"
 
-1499248686 source:c:\users\user\documents\github\fat32_parser\function.c
+1499256013 source:c:\users\user\documents\github\fat32_parser\function.c
 	"function.h"
 

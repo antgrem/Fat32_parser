@@ -1,11 +1,15 @@
 #include "function.h"
 
-    const wchar_t space_str[] = L"    ";
-    const wchar_t dir_str[] = L"\xC3---";
-    uint32_t BS_Info_start_pos;
-    uint8_t cluster_count;
 
-int read_dir_strct(fat32_Dir_t * Dir)
+    static uint32_t FAT_start_pos, Cluster2_start_pos;
+    static uint32_t Cluster_size, Root_dir_first_cluster;
+    static uint32_t global_file_pos;
+
+    static uint32_t BS_Info_start_pos;
+    static uint8_t cluster_count;
+
+// read one dir structure in cluster
+void read_dir_strct(fat32_Dir_t * Dir)
 {
     uint8_t i;
     char *str;
@@ -29,9 +33,9 @@ int read_dir_strct(fat32_Dir_t * Dir)
     }
 
     cluster_count++; // count already read dir structure in cluster
-    global_file_pos += 0x20; // prevent errors of reading
+    global_file_pos += sizeof(fat32_Dir_t); // prevent errors of reading
 
-    return 0;
+    //return 0;
 }
 
 
@@ -78,11 +82,6 @@ file_attr_t get_name(void)
         res.ShortName[i] = '\0';
 
         res.Long_Name[0] = 0;// clean long string
-
-#ifdef DEBIG_INFO
-        printf("Name = %s\nAttr = 0x%x\nCluster = 0x%x\nSize = 0X%x\n", res.ShortName, res.DIR_Attr, res.Cluster, res.FileSize);
-        printf("Name = %s\n\n", res.ShortName);
-#endif // DEBIG_INFO
     }
     else
     {  // long name
@@ -91,11 +90,10 @@ file_attr_t get_name(void)
         memcpy(&long_name[LNF_count], &dir, sizeof(fat32_LFN_t));
 
        do
-        {
+        {//take all long name parts
            LNF_count++;
-        //   pos_file = ftell(p_file);
            read_dir_strct((fat32_Dir_t*)&long_name[LNF_count]);
-        }while((long_name[LNF_count].LDIR_Attr & 0x0F) == 0x0F);
+        }while((long_name[LNF_count].LDIR_Attr & LNF) == LNF);
 
         //copy already read short name part of file
         memcpy(&dir, &long_name[LNF_count], sizeof(fat32_Dir_t));
@@ -113,14 +111,14 @@ file_attr_t get_name(void)
                 }
 
             j = 0;
-            while((j < 6) && (long_name[LNF_count].LDIR_Name2[j] != 0x00) && (long_name[LNF_count].LDIR_Name2[j] != 0xFFFF))
+            while((j < 6) && (long_name[LNF_count].LDIR_Name2[j] != 0x0000) && (long_name[LNF_count].LDIR_Name2[j] != 0xFFFF))
                 {
                     res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name2[j];
                     j++;
                 }
 
             j = 0;
-            while((j < 2) && (long_name[LNF_count].LDIR_Name3[j] != 0x00) && (long_name[LNF_count].LDIR_Name3[j] != 0xFFFF))
+            while((j < 2) && (long_name[LNF_count].LDIR_Name3[j] != 0x0000) && (long_name[LNF_count].LDIR_Name3[j] != 0xFFFF))
                 {
                     res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name3[j];
                     j++;
@@ -144,44 +142,16 @@ file_attr_t get_name(void)
         while ((j < 11) && (dir.DIR_Name[j] != ' '))
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy extension
         res.ShortName[i] = '\0';
-
-#ifdef DEBIG_INFO
-        printf("Short Name = %s\nAttr = 0x%x\nCluster = 0x%x\nSize = 0x%x\n", res.ShortName, res.DIR_Attr, res.Cluster, res.FileSize);
-        wprintf (L"Name = %ls \n\n", res.Long_Name);
-#endif // DEBIG_INFO
-
-    }
+    }//end else long name
 
         return res;
 }
 
 
-void scan_cluster (uint32_t Cluster)
+uint32_t get_next_cluster (uint32_t cluster)
 {
-    uint8_t count=0;
-    file_attr_t temp_file;
 
-#ifdef DEBIG_INFO
-    printf ("------------------\n");
-    printf("%d \t 0x%x\n", Cluster2_start_pos + (Cluster - 2)*Cluster_size,Cluster2_start_pos + (Cluster - 2)*Cluster_size);
-    fprintf(p_output_file, "%d \t 0x%x\n", Cluster2_start_pos + (Cluster - 2)*Cluster_size,Cluster2_start_pos + (Cluster - 2)*Cluster_size);
-    printf("------------------\n");
-#endif
-
-    cluster_count = 0;
-    global_file_pos = Cluster2_start_pos + (Cluster - 2)*Cluster_size;
-
-#ifdef DEBIG_INFO
-    fprintf(p_output_file, "\n0x%x, pos = 0x%x, fat = 0x%x\n", Cluster, global_file_pos, Fat_copy[Cluster]);
-#endif // DEBIG_INFO
-
-    temp_file = get_next_element();
-
-    while((temp_file.Status != S_EMPTY) && (cluster_count < MAX_CLUSTER_FILES))
-        {
-            count++;
-            temp_file = get_next_element();
-        }
+    return get_FAT_table_value(cluster);
 
 }
 
@@ -189,15 +159,22 @@ void scan_cluster (uint32_t Cluster)
 void scan_directory (uint32_t cluster)
 {
     uint32_t data;
+    file_attr_t temp_file;
 
-    scan_cluster(cluster);
-
-    data = get_FAT_table_value(cluster);
+    data = cluster;
     while ((data < LAST_CLUSTER) && (data != BAD_CLUSTER))
         {
-            //next_cluster = data;
-            scan_cluster(data);
-            data = get_FAT_table_value(data);
+
+            cluster_count = 0;
+            global_file_pos = Cluster2_start_pos + (data - 2)*Cluster_size; //set start position of sector
+
+            do
+            {
+                temp_file = get_next_element();
+            }
+            while((temp_file.Status != S_EMPTY) && (cluster_count < MAX_CLUSTER_FILES));
+
+            data = get_next_cluster(data);
         }
 
 }
@@ -208,7 +185,6 @@ uint32_t get_FAT_table_value (uint32_t cluster)
     uint32_t res;
     size_t cnt;
     char *str, i;
-
 
     fseek(p_file, FAT_start_pos + cluster*sizeof(uint32_t), SEEK_SET);
     cnt = fread(&res, 1, sizeof(uint32_t), p_file);
@@ -241,6 +217,10 @@ void scan_root(void)
 
 file_attr_t get_next_element(void)
 {
+    static const wchar_t space_str[] = L"    ";
+    static const wchar_t dir_str[] = L"\xC3---";
+    static uint16_t preambula_len = 0;
+
     file_attr_t element;
     uint32_t pos_file;
     uint16_t i;
@@ -312,51 +292,42 @@ file_attr_t get_next_element(void)
 
         }
 
-
     return element;
 }
 
 void get_FS_info(fat32_FSInfo_t *FSInfo)
 {
-    int res;
-    res = fseek(p_file, BS_Info_start_pos, SEEK_SET);
-    if (res == 0)
-    {
-        fread(FSInfo, 1, sizeof(fat32_FSInfo_t), p_file);
-    }
+    // set position FSinfo structure in file
+    fseek(p_file, BS_Info_start_pos, SEEK_SET);
+
+    fread(FSInfo, 1, sizeof(fat32_FSInfo_t), p_file);
+
 }
 
 void get_BS_info(fat32_BS_t *BS)
 {
-    int res;
-    res = fseek(p_file, 0, SEEK_SET);
-    if (res == 0)
-    {
-        fread(BS, 1, sizeof(fat32_BS_t), p_file);
-    }
+    // set position Boot sector structure in file
+    fseek(p_file, 0, SEEK_SET);
+
+    fread(BS, 1, sizeof(fat32_BS_t), p_file);
+
 }
 
-void get_FAT(uint32_t *FAT)
-{
-    int res;
-    res = fseek(p_file, FAT_start_pos, SEEK_SET);
-    if (res == 0)
-    {
-        fread(FAT, 1, FAT_len, p_file);
-    }
-}
 
 // Check FAT32 system and calculate main parameters
-uint16_t Get_FAT_information(const fat32_BS_t *BS)
+uint16_t Get_FAT_information(void)
 {
+    fat32_BS_t BS;
     uint32_t TotSec, DataSec, CountofClusters;
     uint16_t FATSz;
 
-    FATSz = (BS->BS_FATSz16 != 0) ? BS->BS_FATSz16 : BS->BS_FATSz32;
-    TotSec = (BS->BS_TotSec16 != 0) ? BS->BS_TotSec16 : BS->BS_TotSec32;
+    get_BS_info(&BS); //get information about boot sector of FAT
 
-    DataSec = TotSec - (BS->BS_RsvdSecCnt + (BS->BS_NumFATs * FATSz));
-    CountofClusters = DataSec / BS->BS_SecPerClus;
+    FATSz = (BS.BS_FATSz16 != 0) ? BS.BS_FATSz16 : BS.BS_FATSz32;
+    TotSec = (BS.BS_TotSec16 != 0) ? BS.BS_TotSec16 : BS.BS_TotSec32;
+
+    DataSec = TotSec - (BS.BS_RsvdSecCnt + (BS.BS_NumFATs * FATSz));
+    CountofClusters = DataSec / BS.BS_SecPerClus;
 
     //check correction fat
     if(CountofClusters < 4085) {
@@ -370,59 +341,13 @@ uint16_t Get_FAT_information(const fat32_BS_t *BS)
     }
 
     //calculated starts positions
-    BS_Info_start_pos = BS->BS_FSInfo * BS->BS_BytsPerSec;
-    FAT_start_pos = BS->BS_RsvdSecCnt * BS->BS_BytsPerSec; //bytes
-    FAT_len = FATSz * BS->BS_BytsPerSec;
-    Cluster2_start_pos = FAT_start_pos + BS->BS_NumFATs * FATSz * BS->BS_BytsPerSec;//bytes
-    Cluster_size = BS->BS_SecPerClus * BS->BS_BytsPerSec;
-    Root_dir_first_cluster = BS->BS_RootClus;
-
-#ifdef DEBIG_INFO
-    printf("FAT_start_pos = 0X%x, \nCluster2_start_pos = 0X%x\n", FAT_start_pos, Cluster2_start_pos);
-    printf("Cluster size = 0x%x\nRoot dir first cluster = %d\n", Cluster_size, Root_dir_first_cluster);
-#endif
+    BS_Info_start_pos = BS.BS_FSInfo * BS.BS_BytsPerSec;
+    FAT_start_pos = BS.BS_RsvdSecCnt * BS.BS_BytsPerSec; //bytes
+    Cluster2_start_pos = FAT_start_pos + BS.BS_NumFATs * FATSz * BS.BS_BytsPerSec;//bytes
+    Cluster_size = BS.BS_SecPerClus * BS.BS_BytsPerSec;
+    Root_dir_first_cluster = BS.BS_RootClus;
 
     return 0;
 }
 
-
-void Print_BS_info(fat32_BS_t BS)
-{
-    uint32_t FirstDataSector;
-    uint16_t FATSz;
-    uint32_t TotSec, DataSec, CountofClusters;
-
-            printf("Number of bytes per sector: BPB_BytsPerSec = %d   OK\n", BS.BS_BytsPerSec);//must be 512
-            printf("Number of sectors per cluster: BPB_BS_SecPerClus = %d   OK\n", BS.BS_SecPerClus);
-            printf("Number of reserved sectors at the beginning of the partition: BS_RsvdSecCnt = %d   OK\n", BS.BS_RsvdSecCnt);
-            printf("Number of FATs on the partition: BS_NumFATs = %d   \n", BS.BS_NumFATs);
-            printf("Number of root directory entries BS_RootEntCnt = %d\n", BS.BS_RootEntCnt);
-            printf("Total sector count (32 bits) BS_TotSec32 = %d\n", BS.BS_TotSec32);
-            printf("Sectors per FAT (32 bits) BS_FATSz32 = %d\n", BS.BS_FATSz32);
-            printf("BS_FSInfo = %d\n", BS.BS_FSInfo);
-            printf("BS_BootSig = %d\n", BS.BS_BootSig);
-
-            printf("BS_NumFATs = %d\n", BS.BS_NumFATs);
-
-            FirstDataSector = BS.BS_RsvdSecCnt + (BS.BS_NumFATs * BS.BS_FATSz32);//do not use RootDir section -> FAT23 do not have RootDir
-            printf("FirstDataSector = %d\n", FirstDataSector);
-
-            FATSz = (BS.BS_FATSz16 != 0) ? BS.BS_FATSz16 : BS.BS_FATSz32;
-            TotSec = (BS.BS_TotSec16 != 0) ? BS.BS_TotSec16 : BS.BS_TotSec32;
-
-            DataSec = TotSec - (BS.BS_RsvdSecCnt + (BS.BS_NumFATs * FATSz));
-            printf("DataSec = %d\n", DataSec);
-            CountofClusters = DataSec / BS.BS_SecPerClus;
-
-            if(CountofClusters < 4085) {
-            printf("FAT12. Not FAT32!\n");
-            return ;
-            } else if(CountofClusters < 65525) {
-                printf("FAT16. Not Fat32!\n");
-                return ;
-            } else {
-                printf("FAT32\n");
-            }
-
-}
 

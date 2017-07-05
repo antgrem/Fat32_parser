@@ -1,8 +1,6 @@
 #include "main.h"
 #include "function.h"
 
-    fat32_BS_t BS;
-    fat32_FSInfo_t FSInfo;
     FILE *p_file;
     FILE *p_output_file;
 
@@ -10,7 +8,7 @@
 
 int main(int argc, char *argv[])
 {
-    preambula_len = 0;
+//    preambula_len = 0;
 
     if (argc ==1)
     {
@@ -29,10 +27,8 @@ int main(int argc, char *argv[])
 
     if (p_file)
         {
-            get_BS_info(&BS); //get information about boot sector of FAT
-            get_FS_info(&FSInfo);
 
-            if(Get_FAT_information(&BS)) // get main information of sectors starts position
+            if(Get_FAT_information()) // get main information of sectors starts position
             {   //some kind of error. was printf in function Get_FAT_information()
                 return 1;
             }
