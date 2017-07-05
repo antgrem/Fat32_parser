@@ -186,18 +186,49 @@ void scan_cluster (uint32_t Cluster)
 }
 
 
-void scan_directory (uint32_t Cluster)
+void scan_directory (uint32_t cluster)
 {
-    uint32_t next_cluster;
+    uint32_t data;
 
-    scan_cluster(Cluster);
+    scan_cluster(cluster);
 
-    next_cluster = Cluster;
-    while ((Fat_copy[next_cluster] < LAST_CLUSTER) & (Fat_copy[next_cluster] != BAD_CLUSTER))
+    data = get_FAT_table_value(cluster);
+    while ((data < LAST_CLUSTER) && (data != BAD_CLUSTER))
         {
-            next_cluster = Fat_copy[next_cluster];
-            scan_cluster(next_cluster);
+            //next_cluster = data;
+            scan_cluster(data);
+            data = get_FAT_table_value(data);
         }
+
+}
+
+
+uint32_t get_FAT_table_value (uint32_t cluster)
+{
+    uint32_t res;
+    size_t cnt;
+    char *str, i;
+
+
+    fseek(p_file, FAT_start_pos + cluster*sizeof(uint32_t), SEEK_SET);
+    cnt = fread(&res, 1, sizeof(uint32_t), p_file);
+    if (cnt != sizeof(uint32_t))
+    {// correction of reading file error
+        fseek(p_file, FAT_start_pos + cluster*sizeof(uint32_t) + cnt + 1, SEEK_SET);
+
+        str = (char *) &res;
+        str += (char) cnt;
+
+        *str++ = 0x1a;
+        for (i= 0; i < sizeof(uint32_t) - cnt; i++)
+            {
+                *str++ = (char) fgetc(p_file);
+            }
+    }
+
+    fseek(p_file, global_file_pos, SEEK_SET);
+
+    return res;
 
 }
 

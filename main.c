@@ -1,17 +1,12 @@
 #include "main.h"
 #include "function.h"
 
-
     fat32_BS_t BS;
     fat32_FSInfo_t FSInfo;
     FILE *p_file;
     FILE *p_output_file;
 
-    uint32_t Fat_copy[0x3FC000];
-
     char filename[30];
-
-
 
 int main(int argc, char *argv[])
 {
@@ -41,8 +36,6 @@ int main(int argc, char *argv[])
             {   //some kind of error. was printf in function Get_FAT_information()
                 return 1;
             }
-
-            get_FAT(Fat_copy);
 
             scan_root();
 

@@ -3,16 +3,17 @@
 
 #include "main.h"
 
- extern   FILE *p_file;
- extern   FILE *p_output_file;
     uint32_t FAT_start_pos, Cluster2_start_pos;
     uint32_t Cluster_size, Root_dir_first_cluster;
     uint32_t FAT_len;
- extern   uint32_t Fat_copy[];
- extern   char filename[];
     uint32_t global_file_pos;
-
     uint16_t preambula_len;
+
+ //extern   uint32_t Fat_copy[];
+ extern   char filename[];
+ extern   FILE *p_file;
+ extern   FILE *p_output_file;
+
 
 #define S_EMPTY         0
 #define S_DIRECTORY     1
@@ -49,6 +50,7 @@ void Print_BS_info(fat32_BS_t BS);
 uint16_t Get_FAT_information(const fat32_BS_t *BS);
 void get_BS_info(fat32_BS_t *BS);
 void get_FS_info(fat32_FSInfo_t *FSInfo);
-void get_FAT(uint32_t *FAT);
+
+uint32_t get_FAT_table_value (uint32_t cluster);
 
 #endif // __FUNCTION_H_
