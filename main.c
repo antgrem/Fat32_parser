@@ -5,8 +5,7 @@
 int main(int argc, char *argv[])
 {
     FILE *img_file;
-
-char filename[MAX_LNF_LENGHT];
+    char filename[MAX_LNF_LENGHT];
 
     // take name of image file
     if (argc ==1)
@@ -24,7 +23,7 @@ char filename[MAX_LNF_LENGHT];
 
     if (img_file != NULL)
         {
-            if(Parse_file(img_file, filename))
+            if (Parse_file(img_file, filename))
             {//error in function
                 return 1;
             }
@@ -38,6 +37,8 @@ char filename[MAX_LNF_LENGHT];
     return 0;
 }
 
+// checks the input string. adds file extension if needed
+// return pointer on open file
 FILE *open_file (const char * file_name, char *str_file_name)
 {
     size_t len;
@@ -50,7 +51,9 @@ FILE *open_file (const char * file_name, char *str_file_name)
     {
         pstr = (char*) malloc(len*sizeof(size_t));
         if (pstr == NULL)
+        {
             return NULL;
+        }
         strcpy(pstr, file_name);
     }
     else
@@ -59,7 +62,9 @@ FILE *open_file (const char * file_name, char *str_file_name)
         pstr = (char*) malloc(len*sizeof(size_t));
 
         if (pstr == NULL)
-           return NULL;
+        {
+            return NULL;
+        }
 
         strcpy(pstr, file_name);
         strcat(pstr, ".img");
@@ -71,5 +76,3 @@ FILE *open_file (const char * file_name, char *str_file_name)
     free(pstr);
     return pfile;
 }
-
-

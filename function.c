@@ -12,18 +12,18 @@ uint16_t Get_FAT_information(void);
 void get_BS_info(fat32_BS_t *BS);
 void get_FS_info(fat32_FSInfo_t *FSInfo);
 
-    static FILE *p_output_file;
-    static FILE *p_file;
+ static FILE *p_output_file;
+ static FILE *p_file;
 
-    static uint32_t FAT_start_pos, Cluster2_start_pos;
-    static uint32_t Cluster_size, Root_dir_first_cluster;
-    static uint32_t global_file_pos;
+ static uint32_t FAT_start_pos, Cluster2_start_pos;
+ static uint32_t Cluster_size, Root_dir_first_cluster;
+ static uint32_t global_file_pos;
 
-    static uint32_t BS_Info_start_pos;
-    static uint8_t cluster_count;
+ static uint32_t BS_Info_start_pos;
+ static uint8_t cluster_count;
 
-
-
+// parsed file
+// print information on terminal and "output.txt" file
 uint8_t Parse_file(FILE *file_name, char *str_file_name)
 {
     p_output_file = fopen("output.txt", "w+");
@@ -35,19 +35,16 @@ uint8_t Parse_file(FILE *file_name, char *str_file_name)
 
     // check type of FAT and
     // get main information of sectors starts position
-    if(Get_FAT_information())
+    if (Get_FAT_information())
     {   //some kind of error. was printf in function Get_FAT_information()
         return 1;
     }
-
 
     scan_root();
 
     fclose(p_output_file);
     return 0;
 }
-
-
 
 void scan_root(void)
 {
@@ -63,7 +60,6 @@ void scan_directory (uint32_t cluster)
     data = cluster;
     while ((data < LAST_CLUSTER) && (data != BAD_CLUSTER))
         {
-
             cluster_count = 0;
             global_file_pos = Cluster2_start_pos + (data - 2)*Cluster_size; //set start position of sector
 
@@ -71,25 +67,19 @@ void scan_directory (uint32_t cluster)
             {
                 temp_file = get_next_element();
             }
-            while((temp_file.Status != S_EMPTY) && (cluster_count < MAX_CLUSTER_FILES));
+            while ((temp_file.Status != S_EMPTY) && (cluster_count < MAX_CLUSTER_FILES));
 
-            data = get_next_cluster(data);
+            data = get_next_cluster(data); // get next cluster in chain
         }
-
 }
-
-
 
 uint32_t get_next_cluster (uint32_t cluster)
 {
-
     return get_FAT_table_value(cluster);
-
 }
 
-
-
-
+// read value from FAT table
+// this value show next number of cluster in chain
 uint32_t get_FAT_table_value (uint32_t cluster)
 {
     uint32_t res;
@@ -111,15 +101,13 @@ uint32_t get_FAT_table_value (uint32_t cluster)
                 *str++ = (char) fgetc(p_file);
             }
     }
-
     fseek(p_file, global_file_pos, SEEK_SET);
 
     return res;
-
 }
 
-
-
+// function get new file/directory, check attributes
+// and print information on terminal and "output.txt" file
 file_attr_t get_next_element(void)
 {
     static const wchar_t space_str[] = L"    ";
@@ -136,7 +124,6 @@ file_attr_t get_next_element(void)
         switch (element.DIR_Attr)
         {
         case VOLUME_ID:
-
             preambula_len = 1;
             break;
 
@@ -192,13 +179,9 @@ file_attr_t get_next_element(void)
 
         default:
             break;
-
         }
-
     return element;
 }
-
-
 
 //get information in cluster and transform it in string
 file_attr_t get_name(void)
@@ -236,7 +219,7 @@ file_attr_t get_name(void)
         j = 0;
         while ((j < 8) && (dir.DIR_Name[j] != ' '))
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy name
-        if(res.DIR_Attr != DIRECTORY)
+        if (res.DIR_Attr != DIRECTORY)
             res.ShortName[i++] = '.';
         while ((j < 11) && (dir.DIR_Name[j] != ' '))
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy extension
@@ -254,7 +237,7 @@ file_attr_t get_name(void)
         {//take all long name parts
            LNF_count++;
            read_dir_strct((fat32_Dir_t*)&long_name[LNF_count]);
-        }while((long_name[LNF_count].LDIR_Attr & LNF) == LNF);
+        }while ((long_name[LNF_count].LDIR_Attr & LNF) == LNF);
 
         //copy already read short name part of file
         memcpy(&dir, &long_name[LNF_count], sizeof(fat32_Dir_t));
@@ -264,7 +247,7 @@ file_attr_t get_name(void)
         do
         { //connect parts of long name in one
             j = 0;
-            while((j < 5) && (long_name[LNF_count].LDIR_Name1[j] != 0x0000) && (long_name[LNF_count].LDIR_Name1[j] != 0xFFFF))
+            while ((j < 5) && (long_name[LNF_count].LDIR_Name1[j] != 0x0000) && (long_name[LNF_count].LDIR_Name1[j] != 0xFFFF))
                 {
                     res.Long_Name[count_str] = long_name[LNF_count].LDIR_Name1[j];
                     j++;
@@ -272,19 +255,19 @@ file_attr_t get_name(void)
                 }
 
             j = 0;
-            while((j < 6) && (long_name[LNF_count].LDIR_Name2[j] != 0x0000) && (long_name[LNF_count].LDIR_Name2[j] != 0xFFFF))
+            while ((j < 6) && (long_name[LNF_count].LDIR_Name2[j] != 0x0000) && (long_name[LNF_count].LDIR_Name2[j] != 0xFFFF))
                 {
                     res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name2[j];
                     j++;
                 }
 
             j = 0;
-            while((j < 2) && (long_name[LNF_count].LDIR_Name3[j] != 0x0000) && (long_name[LNF_count].LDIR_Name3[j] != 0xFFFF))
+            while ((j < 2) && (long_name[LNF_count].LDIR_Name3[j] != 0x0000) && (long_name[LNF_count].LDIR_Name3[j] != 0xFFFF))
                 {
                     res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name3[j];
                     j++;
                 }
-        }while(LNF_count--);
+        }while (LNF_count--);
 
         res.Long_Name[count_str] = 0x0000;// zero end of string
 
@@ -298,16 +281,15 @@ file_attr_t get_name(void)
         j = 0;
         while ((j < 8) && (dir.DIR_Name[j] != ' '))
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy name
-        if(res.DIR_Attr != DIRECTORY)
+        if (res.DIR_Attr != DIRECTORY)
             res.ShortName[i++] = '.';
         while ((j < 11) && (dir.DIR_Name[j] != ' '))
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy extension
         res.ShortName[i] = '\0';
     }//end else long name
 
-        return res;
+ return res;
 }
-
 
 // read one dir structure in cluster
 void read_dir_strct(fat32_Dir_t * Dir)
@@ -319,7 +301,7 @@ void read_dir_strct(fat32_Dir_t * Dir)
     fseek(p_file, global_file_pos, SEEK_SET);
 
     cnt = fread(Dir, 1, sizeof(fat32_Dir_t), p_file);
-    if(cnt != sizeof(fat32_Dir_t))
+    if (cnt != sizeof(fat32_Dir_t))
     {// corrected unexpected EOF
         fseek(p_file, global_file_pos + cnt + 1, SEEK_SET);
 
@@ -336,7 +318,6 @@ void read_dir_strct(fat32_Dir_t * Dir)
     cluster_count++; // count already read dir structure in cluster
     global_file_pos += sizeof(fat32_Dir_t); // prevent errors of reading
 
-    //return 0;
 }
 
 
@@ -356,10 +337,10 @@ uint16_t Get_FAT_information(void)
     CountofClusters = DataSec / BS.BS_SecPerClus;
 
     //check correction fat
-    if(CountofClusters < 4085) {
+    if (CountofClusters < 4085) {
     printf("FAT12. Not FAT32!\n");
     return 1;
-    } else if(CountofClusters < 65525) {
+    } else if (CountofClusters < 65525) {
         printf("FAT16. Not Fat32!\n");
         return 1;
     } else {
@@ -376,7 +357,7 @@ uint16_t Get_FAT_information(void)
     return 0;
 }
 
-
+// read block Boot Sector from file
 void get_BS_info(fat32_BS_t *BS)
 {
     // set position Boot sector structure in file
@@ -386,8 +367,7 @@ void get_BS_info(fat32_BS_t *BS)
 
 }
 
-
-
+// read block FS information from file
 void get_FS_info(fat32_FSInfo_t *FSInfo)
 {
     // set position FSinfo structure in file
@@ -396,6 +376,3 @@ void get_FS_info(fat32_FSInfo_t *FSInfo)
     fread(FSInfo, 1, sizeof(fat32_FSInfo_t), p_file);
 
 }
-
-
-
