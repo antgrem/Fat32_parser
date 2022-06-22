@@ -35,14 +35,13 @@ uint8_t Parse_file(FILE *file_name, char *str_file_name)
 
     // check type of FAT and
     // get main information of sectors starts position
-    if (Get_FAT_information())
-    {   //some kind of error. was printf in function Get_FAT_information()
+    if (Get_FAT_information()) {   //some kind of error. was printf in function Get_FAT_information()
         return 1;
     }
 
     scan_root();
-
     fclose(p_output_file);
+
     return 0;
 }
 
@@ -58,19 +57,16 @@ void scan_directory (uint32_t cluster)
     file_attr_t temp_file;
 
     data = cluster;
-    while ((data < LAST_CLUSTER) && (data != BAD_CLUSTER))
-        {
-            cluster_count = 0;
-            global_file_pos = Cluster2_start_pos + (data - 2)*Cluster_size; //set start position of sector
+    while ((data < LAST_CLUSTER) && (data != BAD_CLUSTER)) {
+        cluster_count = 0;
+        global_file_pos = Cluster2_start_pos + (data - 2)*Cluster_size; //set start position of sector
 
-            do
-            {
-                temp_file = get_next_element();
-            }
-            while ((temp_file.Status != S_EMPTY) && (cluster_count < MAX_CLUSTER_FILES));
+        do {
+            temp_file = get_next_element();
+        } while ((temp_file.Status != S_EMPTY) && (cluster_count < MAX_CLUSTER_FILES));
 
-            data = get_next_cluster(data); // get next cluster in chain
-        }
+        data = get_next_cluster(data); // get next cluster in chain
+    }
 }
 
 uint32_t get_next_cluster (uint32_t cluster)
@@ -88,18 +84,17 @@ uint32_t get_FAT_table_value (uint32_t cluster)
 
     fseek(p_file, FAT_start_pos + cluster*sizeof(uint32_t), SEEK_SET);
     cnt = fread(&res, 1, sizeof(uint32_t), p_file);
-    if (cnt != sizeof(uint32_t))
-    {// correction of reading file error
+    if (cnt != sizeof(uint32_t)) {
+        // correction of reading file error
         fseek(p_file, FAT_start_pos + cluster*sizeof(uint32_t) + cnt + 1, SEEK_SET);
 
         str = (char *) &res;
         str += (char) cnt;
 
         *str++ = 0x1a;
-        for (i= 0; i < sizeof(uint32_t) - cnt; i++)
-            {
-                *str++ = (char) fgetc(p_file);
-            }
+        for (i= 0; i < sizeof(uint32_t) - cnt; i++) {
+            *str++ = (char) fgetc(p_file);
+        }
     }
     fseek(p_file, global_file_pos, SEEK_SET);
 
@@ -120,50 +115,40 @@ file_attr_t get_next_element(void)
 
     element = get_name();
 
-    if ((element.Status != S_EMPTY) &&(element.Status != S_DELETED))
-        switch (element.DIR_Attr)
-        {
+    if ((element.Status != S_EMPTY) &&(element.Status != S_DELETED)) {
+        switch (element.DIR_Attr) {
         case VOLUME_ID:
             preambula_len = 1;
             break;
 
         case ARCHIVE:
-            for (i = 0; i < preambula_len; i++)
-            {
+            for (i = 0; i < preambula_len; i++) {
                 printf("%ls", space_str);
                 fprintf(p_output_file, "%ls", space_str);
             }
 
-            if (element.FlagSL_name == DLONG_NAME)
-            {
+            if (element.FlagSL_name == DLONG_NAME) {
                 printf ("%ls\n", element.Long_Name);
                 fprintf (p_output_file, "%ls\n", element.Long_Name);
-            }
-            else
-            {
+            } else {
                 printf("%s\n", element.ShortName);
                 fprintf(p_output_file, "%s\n", element.ShortName);
             }
             break;
 
         case DIRECTORY:
-            if ((element.ShortName[0] != '.'))
-            {
-                for (i = 0; i < preambula_len - 1; i++)
-                {
+            if ((element.ShortName[0] != '.')) {
+                for (i = 0; i < preambula_len - 1; i++) {
                     printf("%ls", space_str);
                     fprintf(p_output_file, "%ls", space_str);
                 }
                 printf("%ls", dir_str);
                 fprintf(p_output_file, "%ls", dir_str);
 
-                if (element.FlagSL_name)
-                {
+                if (element.FlagSL_name) {
                     printf ("%ls\n", element.Long_Name);
                     fprintf (p_output_file, "%ls\n", element.Long_Name);
-                }
-                else
-                {
+                } else {
                     printf("%s\n", element.ShortName);
                     fprintf(p_output_file, "%s\n", element.ShortName);
                 }
@@ -173,13 +158,13 @@ file_attr_t get_next_element(void)
                 scan_directory(element.Cluster);
                 global_file_pos = pos_file;
                 preambula_len -= 1;
-
             }
             break;
 
         default:
             break;
         }
+    }
     return element;
 }
 
@@ -197,18 +182,17 @@ file_attr_t get_name(void)
     read_dir_strct(&dir);
 
     //check
-    if (dir.DIR_Name[0] == 0x00)
-    {// empty folder
-        //printf("Empty or deleted folder");
+    if (dir.DIR_Name[0] == 0x00) {
+        // empty folder
+        // printf("Empty or deleted folder");
         res.Status = S_EMPTY;
         return res;
-    }else if (dir.DIR_Name[0] == 0xE5)
-    {// deleted folder
+    }else if (dir.DIR_Name[0] == 0xE5) {
+        // deleted folder
         res.Status = S_DELETED;
         return res;
-    }
-    else if ((dir.DIR_Attr & LNF) != LNF)
-    {//short name
+    } else if ((dir.DIR_Attr & LNF) != LNF) {
+        //short name
         res.DIR_Attr = dir.DIR_Attr;
         res.Cluster = dir.DIR_FstClusLO | (dir.DIR_FstClusHI<<16);
         res.FileSize = dir.DIR_FileSize;
@@ -217,59 +201,62 @@ file_attr_t get_name(void)
 
         i = 0;
         j = 0;
-        while ((j < 8) && (dir.DIR_Name[j] != ' '))
-            res.ShortName[i++] = dir.DIR_Name[j++]; // copy name
-        if (res.DIR_Attr != DIRECTORY)
+        while ((j < 8) && (dir.DIR_Name[j] != ' ')) {
+            // copy name
+            res.ShortName[i++] = dir.DIR_Name[j++];
+        }
+
+        if (res.DIR_Attr != DIRECTORY) {
             res.ShortName[i++] = '.';
-        while ((j < 11) && (dir.DIR_Name[j] != ' '))
-            res.ShortName[i++] = dir.DIR_Name[j++]; // copy extension
+        }
+
+        while ((j < 11) && (dir.DIR_Name[j] != ' ')) {
+            // copy extension
+            res.ShortName[i++] = dir.DIR_Name[j++];
+        }
         res.ShortName[i] = '\0';
 
         res.Long_Name[0] = 0;// clean long string
-    }
-    else
-    {  // long name
+    } else {
+        // long name
         LNF_count = 0;
         // save read data
         memcpy(&long_name[LNF_count], &dir, sizeof(fat32_LFN_t));
 
-       do
-        {//take all long name parts
+       do {
+           //take all long name parts
            LNF_count++;
            read_dir_strct((fat32_Dir_t*)&long_name[LNF_count]);
-        }while ((long_name[LNF_count].LDIR_Attr & LNF) == LNF);
+        } while ((long_name[LNF_count].LDIR_Attr & LNF) == LNF);
 
         //copy already read short name part of file
         memcpy(&dir, &long_name[LNF_count], sizeof(fat32_Dir_t));
 
         LNF_count--;
         count_str = 0;
-        do
-        { //connect parts of long name in one
+        do {
+            //connect parts of long name in one
             j = 0;
-            while ((j < 5) && (long_name[LNF_count].LDIR_Name1[j] != 0x0000) && (long_name[LNF_count].LDIR_Name1[j] != 0xFFFF))
-                {
-                    res.Long_Name[count_str] = long_name[LNF_count].LDIR_Name1[j];
-                    j++;
-                    count_str++;
-                }
+            while ((j < 5) && (long_name[LNF_count].LDIR_Name1[j] != 0x0000) && (long_name[LNF_count].LDIR_Name1[j] != 0xFFFF)) {
+                res.Long_Name[count_str] = long_name[LNF_count].LDIR_Name1[j];
+                j++;
+                count_str++;
+            }
 
             j = 0;
-            while ((j < 6) && (long_name[LNF_count].LDIR_Name2[j] != 0x0000) && (long_name[LNF_count].LDIR_Name2[j] != 0xFFFF))
-                {
-                    res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name2[j];
-                    j++;
-                }
+            while ((j < 6) && (long_name[LNF_count].LDIR_Name2[j] != 0x0000) && (long_name[LNF_count].LDIR_Name2[j] != 0xFFFF)) {
+                res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name2[j];
+                j++;
+            }
 
             j = 0;
-            while ((j < 2) && (long_name[LNF_count].LDIR_Name3[j] != 0x0000) && (long_name[LNF_count].LDIR_Name3[j] != 0xFFFF))
-                {
-                    res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name3[j];
-                    j++;
-                }
-        }while (LNF_count--);
+            while ((j < 2) && (long_name[LNF_count].LDIR_Name3[j] != 0x0000) && (long_name[LNF_count].LDIR_Name3[j] != 0xFFFF)) {
+                res.Long_Name[count_str++] = long_name[LNF_count].LDIR_Name3[j];
+                j++;
+            }
+        } while (LNF_count--);
 
-        res.Long_Name[count_str] = 0x0000;// zero end of string
+        res.Long_Name[count_str] = 0x0000; // zero end of string
 
         res.DIR_Attr = dir.DIR_Attr;
         res.Cluster = dir.DIR_FstClusLO | (dir.DIR_FstClusHI<<16);
@@ -279,14 +266,17 @@ file_attr_t get_name(void)
 
         i = 0;
         j = 0;
-        while ((j < 8) && (dir.DIR_Name[j] != ' '))
+        while ((j < 8) && (dir.DIR_Name[j] != ' ')) {
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy name
-        if (res.DIR_Attr != DIRECTORY)
+        }
+        if (res.DIR_Attr != DIRECTORY) {
             res.ShortName[i++] = '.';
-        while ((j < 11) && (dir.DIR_Name[j] != ' '))
+        }
+        while ((j < 11) && (dir.DIR_Name[j] != ' ')) {
             res.ShortName[i++] = dir.DIR_Name[j++]; // copy extension
+        }
         res.ShortName[i] = '\0';
-    }//end else long name
+    } // end else long name
 
  return res;
 }
@@ -301,18 +291,17 @@ void read_dir_strct(fat32_Dir_t * Dir)
     fseek(p_file, global_file_pos, SEEK_SET);
 
     cnt = fread(Dir, 1, sizeof(fat32_Dir_t), p_file);
-    if (cnt != sizeof(fat32_Dir_t))
-    {// corrected unexpected EOF
+    if (cnt != sizeof(fat32_Dir_t)) {
+        // corrected unexpected EOF
         fseek(p_file, global_file_pos + cnt + 1, SEEK_SET);
 
         str = (char *) Dir;
         str += (char) cnt;
 
         *str++ = 0x1a;
-        for (i= 0; i < sizeof(fat32_Dir_t) - cnt; i++)
-            {
-                *str++ = (char) fgetc(p_file);
-            }
+        for (i= 0; i < sizeof(fat32_Dir_t) - cnt; i++) {
+            *str++ = (char) fgetc(p_file);
+        }
     }
 
     cluster_count++; // count already read dir structure in cluster
@@ -328,7 +317,7 @@ uint16_t Get_FAT_information(void)
     uint32_t TotSec, DataSec, CountofClusters;
     uint16_t FATSz;
 
-    get_BS_info(&BS); //get information about boot sector of FAT
+    get_BS_info(&BS); // get information about boot sector of FAT
 
     FATSz = (BS.BS_FATSz16 != 0) ? BS.BS_FATSz16 : BS.BS_FATSz32;
     TotSec = (BS.BS_TotSec16 != 0) ? BS.BS_TotSec16 : BS.BS_TotSec32;
@@ -336,10 +325,10 @@ uint16_t Get_FAT_information(void)
     DataSec = TotSec - (BS.BS_RsvdSecCnt + (BS.BS_NumFATs * FATSz));
     CountofClusters = DataSec / BS.BS_SecPerClus;
 
-    //check correction fat
+    // check correction fat
     if (CountofClusters < 4085) {
-    printf("FAT12. Not FAT32!\n");
-    return 1;
+        printf("FAT12. Not FAT32!\n");
+        return 1;
     } else if (CountofClusters < 65525) {
         printf("FAT16. Not Fat32!\n");
         return 1;
@@ -347,10 +336,10 @@ uint16_t Get_FAT_information(void)
         //printf("FAT32\n");
     }
 
-    //calculated starts positions
+    // calculated starts positions
     BS_Info_start_pos = BS.BS_FSInfo * BS.BS_BytsPerSec;
-    FAT_start_pos = BS.BS_RsvdSecCnt * BS.BS_BytsPerSec; //bytes
-    Cluster2_start_pos = FAT_start_pos + BS.BS_NumFATs * FATSz * BS.BS_BytsPerSec;//bytes
+    FAT_start_pos = BS.BS_RsvdSecCnt * BS.BS_BytsPerSec; // bytes
+    Cluster2_start_pos = FAT_start_pos + BS.BS_NumFATs * FATSz * BS.BS_BytsPerSec; // bytes
     Cluster_size = BS.BS_SecPerClus * BS.BS_BytsPerSec;
     Root_dir_first_cluster = BS.BS_RootClus;
 
@@ -362,9 +351,7 @@ void get_BS_info(fat32_BS_t *BS)
 {
     // set position Boot sector structure in file
     fseek(p_file, 0, SEEK_SET);
-
     fread(BS, 1, sizeof(fat32_BS_t), p_file);
-
 }
 
 // read block FS information from file
@@ -372,7 +359,5 @@ void get_FS_info(fat32_FSInfo_t *FSInfo)
 {
     // set position FSinfo structure in file
     fseek(p_file, BS_Info_start_pos, SEEK_SET);
-
     fread(FSInfo, 1, sizeof(fat32_FSInfo_t), p_file);
-
 }

@@ -84,7 +84,6 @@ typedef struct {
 
 } fat32_BS_t;
 
-
 typedef struct {
 
     uint32_t    FSI_LeadSig;        //lead signature used to validate that this is in fact an FSInfo sector. Should be 0x41615252
@@ -97,7 +96,6 @@ typedef struct {
 
 } fat32_FSInfo_t;
 //} __attribute__((packed)) fat32_FSInfo_t;
-
 
 /* Directory object structure (DIR) */
 typedef struct {
@@ -116,7 +114,6 @@ typedef struct {
     uint32_t    DIR_FileSize;       // Size of the file in unit of byte. Not used when it is a directroy and the value must be always zero
 
 } fat32_Dir_t;
-
 
 /* Directory LFN structure (DIR) */
 typedef struct {
