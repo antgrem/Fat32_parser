@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     }
 
     if (img_file != NULL) {
-        if (Parse_file(img_file, filename)) {
+        if (parse_file(img_file, filename)) {
             //error in function
             return 1;
         }

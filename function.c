@@ -3,14 +3,14 @@
 void scan_root(void);
 void scan_directory (uint32_t cluster);
 uint32_t get_next_cluster (uint32_t cluster);
-uint32_t get_FAT_table_value (uint32_t cluster);
+uint32_t get_fat_table_value (uint32_t cluster);
 file_attr_t get_next_element(void);
 file_attr_t get_name(void);
 void read_dir_strct(fat32_Dir_t * Dir);
 
-uint16_t Get_FAT_information(void);
-void get_BS_info(fat32_BS_t *BS);
-void get_FS_info(fat32_FSInfo_t *FSInfo);
+uint16_t get_fat_information(void);
+void get_bs_info(fat32_BS_t *BS);
+void get_fs_info(fat32_FSInfo_t *FSInfo);
 
  static FILE *p_output_file;
  static FILE *p_file;
@@ -24,7 +24,7 @@ void get_FS_info(fat32_FSInfo_t *FSInfo);
 
 // parsed file
 // print information on terminal and "output.txt" file
-uint8_t Parse_file(FILE *file_name, char *str_file_name)
+uint8_t parse_file(FILE *file_name, char *str_file_name)
 {
     p_output_file = fopen("output.txt", "w+");
 
@@ -35,7 +35,7 @@ uint8_t Parse_file(FILE *file_name, char *str_file_name)
 
     // check type of FAT and
     // get main information of sectors starts position
-    if (Get_FAT_information()) {   //some kind of error. was printf in function Get_FAT_information()
+    if (get_fat_information()) {   //some kind of error. was printf in function get_fat_information()
         return 1;
     }
 
@@ -71,12 +71,12 @@ void scan_directory (uint32_t cluster)
 
 uint32_t get_next_cluster (uint32_t cluster)
 {
-    return get_FAT_table_value(cluster);
+    return get_fat_table_value(cluster);
 }
 
 // read value from FAT table
 // this value show next number of cluster in chain
-uint32_t get_FAT_table_value (uint32_t cluster)
+uint32_t get_fat_table_value (uint32_t cluster)
 {
     uint32_t res;
     size_t cnt;
@@ -306,18 +306,17 @@ void read_dir_strct(fat32_Dir_t * Dir)
 
     cluster_count++; // count already read dir structure in cluster
     global_file_pos += sizeof(fat32_Dir_t); // prevent errors of reading
-
 }
 
 
 // Check FAT32 system and calculate main parameters
-uint16_t Get_FAT_information(void)
+uint16_t get_fat_information(void)
 {
     fat32_BS_t BS;
     uint32_t TotSec, DataSec, CountofClusters;
     uint16_t FATSz;
 
-    get_BS_info(&BS); // get information about boot sector of FAT
+    get_bs_info(&BS); // get information about boot sector of FAT
 
     FATSz = (BS.BS_FATSz16 != 0) ? BS.BS_FATSz16 : BS.BS_FATSz32;
     TotSec = (BS.BS_TotSec16 != 0) ? BS.BS_TotSec16 : BS.BS_TotSec32;
@@ -347,7 +346,7 @@ uint16_t Get_FAT_information(void)
 }
 
 // read block Boot Sector from file
-void get_BS_info(fat32_BS_t *BS)
+void get_bs_info(fat32_BS_t *BS)
 {
     // set position Boot sector structure in file
     fseek(p_file, 0, SEEK_SET);
@@ -355,7 +354,7 @@ void get_BS_info(fat32_BS_t *BS)
 }
 
 // read block FS information from file
-void get_FS_info(fat32_FSInfo_t *FSInfo)
+void get_fs_info(fat32_FSInfo_t *FSInfo)
 {
     // set position FSinfo structure in file
     fseek(p_file, BS_Info_start_pos, SEEK_SET);

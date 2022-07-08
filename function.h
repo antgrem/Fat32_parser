@@ -53,7 +53,6 @@
 
 /* Boot sector structure */
 typedef struct {
-
     uint8_t   BS_jmpBoot[3];      // Jump Command
     uint8_t   BS_OEMName[8];      // OEM name
     uint16_t  BS_BytsPerSec;      // Number of bytes per sector
@@ -81,7 +80,6 @@ typedef struct {
     uint8_t   BS_VolID[4];        // Volume ID
     uint8_t   BS_VolLab[11];      // Volume Label
     uint8_t   BS_FilSysType[8];   // File system type in ASCII.  Not used for determination
-
 } fat32_BS_t;
 
 typedef struct {
@@ -93,7 +91,6 @@ typedef struct {
     uint32_t    FSI_NxtFree;        //
     uint8_t     FSI_Reservd2[12];   //reserved/ Zero.
     uint32_t    TrailSig;           //0xAA550000
-
 } fat32_FSInfo_t;
 //} __attribute__((packed)) fat32_FSInfo_t;
 
@@ -112,7 +109,6 @@ typedef struct {
     uint16_t    DIR_WrtDate;        // Last data when any change is made to the file (typically on closeing).
     uint16_t    DIR_FstClusLO;      // Lower part of cluster number. Always zero if the file size is zero
     uint32_t    DIR_FileSize;       // Size of the file in unit of byte. Not used when it is a directroy and the value must be always zero
-
 } fat32_Dir_t;
 
 /* Directory LFN structure (DIR) */
@@ -125,7 +121,6 @@ typedef struct {
     uint16_t        LDIR_Name2[6];      // Part of LFN from 6th character to 11th character
     uint16_t        LDIR_FstClusLO;     // Must be zero to avoid any wrong repair by old disk utility
     uint16_t        LDIR_Name3[2];      // Part of LFN from 12th character to 13th character
-
 } fat32_LFN_t;
 
 #pragma pack(pop)
@@ -139,9 +134,8 @@ typedef struct {
     uint8_t     FlagSL_name;                            // flag short (0) or long(1) file name
     uint8_t     DIR_Attr;                               // Attribute
     uint8_t     ShortName[MAX_SHORT_NAME_LENGHT];       // Short file name
-
 } file_attr_t;
 
-uint8_t Parse_file(FILE *file_name, char *str_file_name);
+uint8_t parse_file(FILE *file_name, char *str_file_name);
 
 #endif // __FUNCTION_H_

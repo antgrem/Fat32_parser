@@ -6,6 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-FILE *open_file (const char * file_name, char *str_file_name);
+FILE *open_file(const char * file_name, char *str_file_name);
 
 #endif // __MAIN_H_
